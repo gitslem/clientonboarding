@@ -8,7 +8,7 @@ project — tracker row, Drive folder, welcome email with contract and
 deposit links, an intake questionnaire, polite automated nudges, and a
 kickoff call booking — without you sending a single manual email. Hire AI automation experts from [REWORK](https://reworkdigital.io)
 
-Companion to the [n8n Lead Generation Machine](https://github.com/YOUR-USERNAME/n8n-lead-generation-machine):
+Companion to the [n8n Lead Generation Machine](https://github.com/gitslem/n8n-lead-generation-machine):
 that one wins the client, this one onboards them.
 
 ![n8n](https://img.shields.io/badge/n8n-workflow-EA4B71?logo=n8n&logoColor=white)
