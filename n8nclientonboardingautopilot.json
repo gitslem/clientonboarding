@@ -1,0 +1,739 @@
+{
+  "name": "Client Onboarding Autopilot — Deal Won to Kickoff",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🚀 Client Onboarding Autopilot\n\n**Deal won → tracker row + Drive folder → welcome email (questionnaire, contract, deposit) → polite nudges → kickoff call booked.** Zero copy-paste admin.\n\nTwo independent paths:\n\n**Path A — Deal Won** (top): you log a new client (form or webhook). The machine creates the project infrastructure, sends the welcome email with the 3 next steps, then checks back and nudges until the intake questionnaire arrives.\n\n**Path B — Intake Received** (bottom): the *client* fills the intake questionnaire. The tracker flips to `intake-received`, you get a Slack ping, and the client automatically gets the kickoff booking email.\n\n### Setup checklist (~15 min)\n1. **SMTP credential** → the 3 email nodes. Personalize copy, booking link, e-sign + payment links.\n2. **Slack credential** → the 3 Slack nodes (default channel `#clients`).\n3. **Google Sheets credential** → the 3 tracker nodes. Create a sheet with headers: `clientName, clientEmail, company, projectName, projectType, fee, depositPercent, depositAmount, startDate, notes, validEmail, status, source, onboardedAt`.\n4. **Google Drive credential** → the folder node (or delete it).\n5. **Activate**, then open *Client Intake Questionnaire* → copy its Form URL → paste into the welcome + nudge emails where it says `INTAKE_FORM_URL`.",
+        "width": 500,
+        "height": 940,
+        "color": 7
+      },
+      "id": "aaaa1111-0000-4000-8000-000000000001",
+      "name": "README — Start Here",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-2020, -300]
+    },
+    {
+      "parameters": {
+        "content": "### 1️⃣ DEAL WON — two entry points\n\n**A. Form** — you (the freelancer) fill this 60-second form the moment a deal closes. Bookmark its URL.\n\n**B. Webhook** — `POST /webhook/client-won` from your proposal tool, CRM stage change, or Stripe checkout:\n\n```json\n{\n  \"client_name\": \"Jane Smith\",\n  \"client_email\": \"jane@acme.com\",\n  \"company\": \"Acme Inc\",\n  \"project_name\": \"Website revamp\",\n  \"project_type\": \"Web design\",\n  \"fee\": 4800,\n  \"deposit_percent\": 50,\n  \"start_date\": \"2026-08-01\",\n  \"notes\": \"Referred by Tom\"\n}\n```",
+        "width": 360,
+        "height": 640,
+        "color": 4
+      },
+      "id": "aaaa1111-0000-4000-8000-000000000002",
+      "name": "Note — Deal Won",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-1480, -40]
+    },
+    {
+      "parameters": {
+        "content": "### 2️⃣ AUTO-SETUP (runs in parallel)\n\nTracker row · client Drive folder · Slack 🎉 · welcome email with the 3 next steps (intake questionnaire, contract to sign, deposit invoice — the calculated `depositAmount` is filled in automatically).",
+        "width": 560,
+        "height": 180,
+        "color": 5
+      },
+      "id": "aaaa1111-0000-4000-8000-000000000003",
+      "name": "Note — Auto-Setup",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-780, -420]
+    },
+    {
+      "parameters": {
+        "content": "### 3️⃣ NUDGE ENGINE\n\nDay 2: check the tracker. Intake already in? Do nothing. Not yet? Send one friendly nudge. Day 5: check again — still nothing → Slack alert so YOU call them (a stalled onboarding is a churn risk, not an email problem).\n\nThe checks read the `status` column, so the loop stops the moment Path B flips it to `intake-received`.",
+        "width": 920,
+        "height": 200,
+        "color": 6
+      },
+      "id": "aaaa1111-0000-4000-8000-000000000004",
+      "name": "Note — Nudge Engine",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-460, -420]
+    },
+    {
+      "parameters": {
+        "content": "### 4️⃣ INTAKE RECEIVED → KICKOFF (Path B)\n\nThe client fills this questionnaire (link is in the welcome email). Answers land in the tracker, `status` flips to `intake-received`, you get a Slack ping with their goals, and the client instantly receives the kickoff booking email. Speed matters here the same way it does for leads — book the kickoff while enthusiasm is high.",
+        "width": 1240,
+        "height": 190,
+        "color": 3
+      },
+      "id": "aaaa1111-0000-4000-8000-000000000005",
+      "name": "Note — Intake Path",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-1480, 700]
+    },
+    {
+      "parameters": {
+        "formTitle": "New Client — Onboarding Kickoff",
+        "formDescription": "Fill this the moment a deal closes. The autopilot handles the rest.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Client Name",
+              "placeholder": "Jane Smith",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Client Email",
+              "fieldType": "email",
+              "placeholder": "jane@acme.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Company",
+              "placeholder": "Acme Inc."
+            },
+            {
+              "fieldLabel": "Project Name",
+              "placeholder": "Website revamp",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Project Type",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Web design / development" },
+                  { "option": "Automation / AI build" },
+                  { "option": "Marketing / content" },
+                  { "option": "Consulting / strategy" },
+                  { "option": "Other" }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Project Fee (USD)",
+              "fieldType": "number",
+              "placeholder": "4800"
+            },
+            {
+              "fieldLabel": "Deposit Required",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "25%" },
+                  { "option": "50%" },
+                  { "option": "100% upfront" }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Target Start Date",
+              "fieldType": "date"
+            },
+            {
+              "fieldLabel": "Notes for the file",
+              "fieldType": "textarea",
+              "placeholder": "Anything worth remembering about this deal."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000001",
+      "name": "New Client Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [-1380, 120],
+      "webhookId": "7a2d94e1-3b5c-4f6a-8d7e-bbbbbbbbbbb1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "client-won",
+        "options": {}
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000002",
+      "name": "Webhook — Deal Won",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1380, 360],
+      "webhookId": "7a2d94e1-3b5c-4f6a-8d7e-bbbbbbbbbbb2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Normalize both entry points (form + webhook) into one canonical client record.\nconst src = $json.body ? $json.body : $json;\n\nconst pick = (...keys) => {\n  for (const k of keys) {\n    const v = src[k];\n    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n};\n\nconst clientName = pick('Client Name', 'client_name', 'name');\nconst clientEmail = pick('Client Email', 'client_email', 'email').toLowerCase();\nconst company = pick('Company', 'company');\nconst projectName = pick('Project Name', 'project_name', 'project');\nconst projectType = pick('Project Type', 'project_type');\nconst feeRaw = pick('Project Fee (USD)', 'fee', 'amount');\nconst depositRaw = pick('Deposit Required', 'deposit_percent', 'deposit');\nconst startDate = pick('Target Start Date', 'start_date');\nconst notes = pick('Notes for the file', 'notes');\n\nconst fee = parseFloat(String(feeRaw).replace(/[^0-9.]/g, '')) || 0;\nconst depositPercent = parseInt(String(depositRaw).replace(/[^0-9]/g, ''), 10) || 50;\nconst depositAmount = Math.round((fee * depositPercent / 100) * 100) / 100;\n\nconst validEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(clientEmail);\n\nreturn {\n  json: {\n    clientName,\n    clientEmail,\n    company,\n    projectName,\n    projectType,\n    fee,\n    depositPercent,\n    depositAmount,\n    startDate,\n    notes,\n    validEmail,\n    status: 'onboarding-started',\n    source: $json.body ? 'webhook' : 'n8n-form',\n    onboardedAt: new Date().toISOString()\n  }\n};"
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000003",
+      "name": "Normalize Client Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1140, 240]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-valid-client-email",
+              "leftValue": "={{ $json.validEmail }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000004",
+      "name": "Valid Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-920, 240]
+    },
+    {
+      "parameters": {},
+      "id": "bbbb2222-0000-4000-8000-000000000005",
+      "name": "Discard Invalid Record",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-700, 440]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000006",
+      "name": "Add to Client Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-700, -200]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "={{ $json.company || $json.clientName }} — {{ $json.projectName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000007",
+      "name": "Create Client Drive Folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-700, -60]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#clients"
+        },
+        "text": "=🎉 *New client won — onboarding started!*\n\n*Client:* {{ $json.clientName }} ({{ $json.clientEmail }})\n*Company:* {{ $json.company || '—' }}\n*Project:* {{ $json.projectName }} · {{ $json.projectType || '—' }}\n*Fee:* ${{ $json.fee }} (deposit ${{ $json.depositAmount }} · {{ $json.depositPercent }}%)\n*Target start:* {{ $json.startDate || 'TBD' }}\n\nWelcome email + questionnaire + contract + deposit invoice are on their way.",
+        "otherOptions": {}
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000008",
+      "name": "Notify — New Client Won",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [-700, 80]
+    },
+    {
+      "parameters": {
+        "fromEmail": "you@yourcompany.com",
+        "toEmail": "={{ $json.clientEmail }}",
+        "subject": "=Welcome aboard, {{ $json.clientName.split(' ')[0] }} — here's how we start 🚀",
+        "emailFormat": "text",
+        "text": "=Hi {{ $json.clientName.split(' ')[0] }},\n\nI'm thrilled to get started on {{ $json.projectName }}! To kick things off smoothly, there are just three quick steps:\n\n1️⃣ INTAKE QUESTIONNAIRE (5 minutes — this shapes everything):\nINTAKE_FORM_URL\n\n2️⃣ SIGN THE AGREEMENT:\nhttps://YOUR-ESIGN-LINK\n\n3️⃣ DEPOSIT INVOICE (${{ $json.depositAmount }}):\nhttps://YOUR-PAYMENT-LINK\n\nOnce the questionnaire is in, you'll automatically get a link to book our kickoff call{{ $json.startDate ? ' — we are aiming to start around ' + $json.startDate : '' }}.\n\nAny questions at all, just reply to this email.\n\nExcited to build this with you,\nYOUR NAME\nYOUR COMPANY",
+        "options": {}
+      },
+      "id": "bbbb2222-0000-4000-8000-000000000009",
+      "name": "Email 1 — Welcome + Next Steps",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [-700, 240]
+    },
+    {
+      "parameters": {
+        "unit": "days",
+        "amount": 2
+      },
+      "id": "cccc3333-0000-4000-8000-000000000001",
+      "name": "Wait 2 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [-480, 240],
+      "webhookId": "7a2d94e1-3b5c-4f6a-8d7e-bbbbbbbbbbb3"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "clientEmail",
+              "lookupValue": "={{ $('Normalize Client Record').item.json.clientEmail }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "cccc3333-0000-4000-8000-000000000002",
+      "name": "Check Tracker Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-260, 240]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-intake-received",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "intake-received",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cccc3333-0000-4000-8000-000000000003",
+      "name": "Intake Received?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-40, 240]
+    },
+    {
+      "parameters": {},
+      "id": "cccc3333-0000-4000-8000-000000000004",
+      "name": "On Track — No Nudge Needed",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [180, 120]
+    },
+    {
+      "parameters": {
+        "fromEmail": "you@yourcompany.com",
+        "toEmail": "={{ $('Normalize Client Record').item.json.clientEmail }}",
+        "subject": "=Quick nudge — 2 minutes to keep {{ $('Normalize Client Record').item.json.projectName }} on schedule",
+        "emailFormat": "text",
+        "text": "=Hi {{ $('Normalize Client Record').item.json.clientName.split(' ')[0] }},\n\nJust a friendly nudge — I can't start the good work on {{ $('Normalize Client Record').item.json.projectName }} until the intake questionnaire is in (it takes about 5 minutes):\n\n👉 INTAKE_FORM_URL\n\nIf anything in the onboarding steps is unclear or blocked on your side, just reply to this email and I'll sort it out.\n\nBest,\nYOUR NAME",
+        "options": {}
+      },
+      "id": "cccc3333-0000-4000-8000-000000000005",
+      "name": "Email 2 — Gentle Nudge",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [180, 360]
+    },
+    {
+      "parameters": {
+        "unit": "days",
+        "amount": 3
+      },
+      "id": "cccc3333-0000-4000-8000-000000000006",
+      "name": "Wait 3 More Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [400, 360],
+      "webhookId": "7a2d94e1-3b5c-4f6a-8d7e-bbbbbbbbbbb4"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "clientEmail",
+              "lookupValue": "={{ $('Normalize Client Record').item.json.clientEmail }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "cccc3333-0000-4000-8000-000000000007",
+      "name": "Re-check Tracker Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [620, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-intake-received-2",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "intake-received",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cccc3333-0000-4000-8000-000000000008",
+      "name": "Intake Received Now?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [840, 360]
+    },
+    {
+      "parameters": {},
+      "id": "cccc3333-0000-4000-8000-000000000009",
+      "name": "Done — Kickoff Already Sent",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1060, 240]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#clients"
+        },
+        "text": "=⚠️ *Onboarding stalled — pick up the phone*\n\n*Client:* {{ $('Normalize Client Record').item.json.clientName }} ({{ $('Normalize Client Record').item.json.clientEmail }})\n*Project:* {{ $('Normalize Client Record').item.json.projectName }}\n*Won on:* {{ $('Normalize Client Record').item.json.onboardedAt }}\n\nNo intake questionnaire after the welcome email + 1 nudge (~5 days). A stalled onboarding is a churn risk — a quick personal call usually unblocks it.",
+        "otherOptions": {}
+      },
+      "id": "cccc3333-0000-4000-8000-000000000010",
+      "name": "Alert — Onboarding Stalled",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1060, 480]
+    },
+    {
+      "parameters": {
+        "formTitle": "Project Intake Questionnaire",
+        "formDescription": "5 minutes that make your project dramatically better. Your answers go straight to the person building it.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Your Name",
+              "placeholder": "Jane Smith",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Work Email",
+              "fieldType": "email",
+              "placeholder": "jane@acme.com",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "What are the top goals for this project?",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "What does success look like in 90 days?",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Link to brand assets / existing materials",
+              "placeholder": "Drive, Dropbox, Notion…"
+            },
+            {
+              "fieldLabel": "Who else is involved in decisions?",
+              "placeholder": "Names + roles"
+            },
+            {
+              "fieldLabel": "Preferred way to communicate",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Email" },
+                  { "option": "Slack" },
+                  { "option": "WhatsApp" },
+                  { "option": "Scheduled calls" }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Anything else I should know?",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dddd4444-0000-4000-8000-000000000001",
+      "name": "Client Intake Questionnaire",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [-1380, 940],
+      "webhookId": "7a2d94e1-3b5c-4f6a-8d7e-bbbbbbbbbbb5"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Normalize the client's questionnaire answers and flip the onboarding status.\nconst src = $json;\n\nconst pick = (...keys) => {\n  for (const k of keys) {\n    const v = src[k];\n    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();\n  }\n  return '';\n};\n\nreturn {\n  json: {\n    clientName: pick('Your Name'),\n    clientEmail: pick('Work Email').toLowerCase(),\n    goals: pick('What are the top goals for this project?'),\n    successCriteria: pick('What does success look like in 90 days?'),\n    assetsLink: pick('Link to brand assets / existing materials'),\n    stakeholders: pick('Who else is involved in decisions?'),\n    commsPreference: pick('Preferred way to communicate'),\n    extraNotes: pick('Anything else I should know?'),\n    status: 'intake-received',\n    intakeReceivedAt: new Date().toISOString()\n  }\n};"
+      },
+      "id": "dddd4444-0000-4000-8000-000000000002",
+      "name": "Normalize Intake Answers",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1140, 940]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": ["clientEmail"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "dddd4444-0000-4000-8000-000000000003",
+      "name": "Update Tracker — Intake Received",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-900, 940]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#clients"
+        },
+        "text": "=✅ *Intake questionnaire received — ready for kickoff*\n\n*Client:* {{ $('Normalize Intake Answers').item.json.clientName }} ({{ $('Normalize Intake Answers').item.json.clientEmail }})\n*Top goals:* {{ $('Normalize Intake Answers').item.json.goals }}\n*Success in 90 days:* {{ $('Normalize Intake Answers').item.json.successCriteria || '—' }}\n*Prefers:* {{ $('Normalize Intake Answers').item.json.commsPreference || '—' }}\n\nThe kickoff booking email just went out — review the full answers in the tracker before the call.",
+        "otherOptions": {}
+      },
+      "id": "dddd4444-0000-4000-8000-000000000004",
+      "name": "Notify — Intake Received",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [-660, 860]
+    },
+    {
+      "parameters": {
+        "fromEmail": "you@yourcompany.com",
+        "toEmail": "={{ $('Normalize Intake Answers').item.json.clientEmail }}",
+        "subject": "=Got your answers, {{ $('Normalize Intake Answers').item.json.clientName.split(' ')[0] }} — let's book the kickoff 🎉",
+        "emailFormat": "text",
+        "text": "=Hi {{ $('Normalize Intake Answers').item.json.clientName.split(' ')[0] }},\n\nThank you — your questionnaire just came through and it's exactly what I needed. I've already gone through your goals.\n\nLast step: pick a time for our kickoff call:\n\n👉 https://cal.com/YOUR-BOOKING-LINK\n\nOn the call we'll lock the plan, timeline and first milestone (about 30–45 minutes). If the contract or deposit are still pending, having them wrapped up before the call means we can start building immediately after it.\n\nSee you there,\nYOUR NAME\nYOUR COMPANY",
+        "options": {}
+      },
+      "id": "dddd4444-0000-4000-8000-000000000005",
+      "name": "Email — Book Your Kickoff Call",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [-660, 1020]
+    }
+  ],
+  "connections": {
+    "New Client Form": {
+      "main": [
+        [
+          { "node": "Normalize Client Record", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Webhook — Deal Won": {
+      "main": [
+        [
+          { "node": "Normalize Client Record", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Normalize Client Record": {
+      "main": [
+        [
+          { "node": "Valid Email?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Valid Email?": {
+      "main": [
+        [
+          { "node": "Add to Client Tracker", "type": "main", "index": 0 },
+          { "node": "Create Client Drive Folder", "type": "main", "index": 0 },
+          { "node": "Notify — New Client Won", "type": "main", "index": 0 },
+          { "node": "Email 1 — Welcome + Next Steps", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Discard Invalid Record", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Email 1 — Welcome + Next Steps": {
+      "main": [
+        [
+          { "node": "Wait 2 Days", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Wait 2 Days": {
+      "main": [
+        [
+          { "node": "Check Tracker Status", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Check Tracker Status": {
+      "main": [
+        [
+          { "node": "Intake Received?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Intake Received?": {
+      "main": [
+        [
+          { "node": "On Track — No Nudge Needed", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Email 2 — Gentle Nudge", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Email 2 — Gentle Nudge": {
+      "main": [
+        [
+          { "node": "Wait 3 More Days", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Wait 3 More Days": {
+      "main": [
+        [
+          { "node": "Re-check Tracker Status", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Re-check Tracker Status": {
+      "main": [
+        [
+          { "node": "Intake Received Now?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Intake Received Now?": {
+      "main": [
+        [
+          { "node": "Done — Kickoff Already Sent", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Alert — Onboarding Stalled", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Client Intake Questionnaire": {
+      "main": [
+        [
+          { "node": "Normalize Intake Answers", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Normalize Intake Answers": {
+      "main": [
+        [
+          { "node": "Update Tracker — Intake Received", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Update Tracker — Intake Received": {
+      "main": [
+        [
+          { "node": "Notify — Intake Received", "type": "main", "index": 0 },
+          { "node": "Email — Book Your Kickoff Call", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
